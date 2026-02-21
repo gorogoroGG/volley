@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🏐 VolleyBoard - バレーボール戦術ボード</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header id="header">
+    <div class="header-left">
+      <span class="logo">🏐 VolleyBoard</span>
+      <div class="room-info">
+        <span class="room-label">ROOM</span>
+        <span id="room-id">------</span>
+        <button id="copy-url-btn" class="icon-btn" title="URLをコピー">📋</button>
+        <button id="qr-btn" class="icon-btn" title="QRコード">📱</button>
+        <a href="3d.html" class="icon-btn" title="3D戦術ビュー"
+          style="text-decoration:none;font-size:0.78rem;font-weight:700;color:#4d94ff;padding:3px 8px;border:1px solid #263547;border-radius:8px;background:#1c2d40">🎯
+          3D</a>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="status-dot" class="status-dot"></span>
+      <span id="status-text" class="status-text">接続中...</span>
+      <span id="user-count" class="user-count">👥 1</span>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <div id="main">
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+
+      <div class="panel-section">
+        <div class="section-label">ツール</div>
+        <div class="btn-grid cols3">
+          <button class="tool-btn active" data-tool="pen" title="ペン">✏️</button>
+          <button class="tool-btn" data-tool="eraser" title="消しゴム">🧹</button>
+          <button class="tool-btn" data-tool="arrow" title="矢印">➡️</button>
+          <button class="tool-btn" data-tool="text" title="テキスト">📝</button>
+          <button class="tool-btn" data-tool="select" title="移動">🖐️</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">操作</div>
+        <div class="btn-grid cols3">
+          <button id="undo-btn" class="tool-btn" title="元に戻す Ctrl+Z">↩️</button>
+          <button id="redo-btn" class="tool-btn" title="やり直し Ctrl+Y">↪️</button>
+          <button id="clear-btn" class="tool-btn danger" title="全消去">🗑️</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">色</div>
+        <div class="color-grid">
+          <button class="color-btn" data-color="#FFFFFF" style="background:#FFFFFF" title="白"></button>
+          <button class="color-btn active" data-color="#FF4444" style="background:#FF4444" title="赤"></button>
+          <button class="color-btn" data-color="#4488FF" style="background:#4488FF" title="青"></button>
+          <button class="color-btn" data-color="#44DD88" style="background:#44DD88" title="緑"></button>
+          <button class="color-btn" data-color="#FFEE44" style="background:#FFEE44" title="黄"></button>
+          <button class="color-btn" data-color="#FF9900" style="background:#FF9900" title="橙"></button>
+          <button class="color-btn" data-color="#CC66FF" style="background:#CC66FF" title="紫"></button>
+          <button class="color-btn" data-color="#111111" style="background:#111111" title="黒"></button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">太さ</div>
+        <div class="btn-grid cols3">
+          <button class="size-btn" data-size="2">細</button>
+          <button class="size-btn active" data-size="4">中</button>
+          <button class="size-btn" data-size="8">太</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">選手</div>
+        <button id="add-own-btn" class="player-add-btn own">＋ 自チーム</button>
+        <button id="add-opp-btn" class="player-add-btn opp">＋ 相手チーム</button>
+        <div class="section-label" style="margin-top:8px">ヒント:右クリックで削除</div>
+      </div>
+
+    </aside>
+
+    <!-- Canvas area -->
+    <div id="canvas-container">
+      <canvas id="court-canvas"></canvas>
+      <canvas id="draw-canvas"></canvas>
+      <!-- Text input overlay -->
+      <div id="text-overlay" style="display:none;position:absolute;z-index:50;">
+        <input id="text-input" type="text" placeholder="テキストを入力... Enter確定">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- QR Modal -->
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>QRコードで招待</h2>
+      <p>このコードをスキャンしてルームに参加</p>
+      <div id="qr-code-el"></div>
+      <div class="url-row">
+        <input id="share-url-input" type="text" readonly>
+        <button id="modal-copy-btn">コピー</button>
+      </div>
+      <button id="close-qr-btn" class="close-btn">閉じる</button>
+    </div>
+  </div>
+
+  <!-- Welcome Toast -->
+  <div id="welcome-toast" class="toast hidden">
+    <span class="toast-icon">🏐</span>
+    <div class="toast-body">
+      <strong>新しいルームを作成</strong>
+      <span id="toast-room-id"></span>
+    </div>
+    <button id="toast-share-btn" class="toast-share-btn">共有 📱</button>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
