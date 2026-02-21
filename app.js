@@ -20,6 +20,8 @@ let isPointerDown = false;
 let currentPoints = [];   // pen stroke
 let arrowStart = null;    // arrow start point (normalized)
 let tempArrow = null;     // preview
+let areaStart = null;     // area start point
+let tempArea = null;      // preview
 
 // Select/drag
 let selectedId = null;
@@ -190,8 +192,18 @@ function drawCourt() {
 // =============================================
 // COORDINATE UTILS
 // =============================================
-function toNorm(px, py) { return { x: px / canvasW, y: py / canvasH }; }
-function fromNorm(nx, ny) { return { x: nx * canvasW, y: ny * canvasH }; }
+// 座標はコート領域 (courtBounds) を基準に正規化する。
+// これにより画面比率が異なるデバイス間でも同じコート上の位置が同じ値になる。
+function toNorm(px, py) {
+  const { x: cx, y: cy, w: cw, h: ch } = courtBounds;
+  if (!cw || !ch) return { x: px / canvasW, y: py / canvasH }; // フォールバック
+  return { x: (px - cx) / cw, y: (py - cy) / ch };
+}
+function fromNorm(nx, ny) {
+  const { x: cx, y: cy, w: cw, h: ch } = courtBounds;
+  if (!cw || !ch) return { x: nx * canvasW, y: ny * canvasH }; // フォールバック
+  return { x: cx + nx * cw, y: cy + ny * ch };
+}
 
 function getPos(e) {
   const r = drawCanvas.getBoundingClientRect();
@@ -205,29 +217,49 @@ const playerRadius = () => Math.max(16, Math.min(canvasW, canvasH) * 0.038);
 
 function hitTestPlayer(nx, ny) {
   const r = playerRadius();
+  const hitPx = fromNorm(nx, ny);
   for (let i = objects.length - 1; i >= 0; i--) {
     const o = objects[i];
-    if (o.type !== 'player') continue;
+    if (o.type !== 'player' && o.type !== 'ball') continue;
     const px = fromNorm(o.x, o.y);
-    const dx = nx * canvasW - px.x;
-    const dy = ny * canvasH - px.y;
-    if (dx * dx + dy * dy <= r * r) return o;
+    const tr = o.type === 'ball' ? r * 0.7 : r;
+    const dx = hitPx.x - px.x;
+    const dy = hitPx.y - px.y;
+    if (dx * dx + dy * dy <= tr * tr) return o;
   }
   return null;
 }
 
 function hitTestAny(nx, ny) {
   const r = playerRadius();
+  const hitPx = fromNorm(nx, ny);
+  // 上に描画されるもの（テキスト・選手・ボール）を先に判定
   for (let i = objects.length - 1; i >= 0; i--) {
     const o = objects[i];
-    if (o.type === 'player') {
+    if (o.type === 'player' || o.type === 'ball') {
       const px = fromNorm(o.x, o.y);
-      const dx = nx * canvasW - px.x;
-      const dy = ny * canvasH - px.y;
-      if (dx * dx + dy * dy <= r * r) return o;
+      const tr = o.type === 'ball' ? r * 0.7 : r;
+      const dx = hitPx.x - px.x;
+      const dy = hitPx.y - px.y;
+      if (dx * dx + dy * dy <= tr * tr) return o;
     } else if (o.type === 'text') {
       const pos = fromNorm(o.x, o.y);
-      if (Math.abs(nx * canvasW - pos.x) < 80 && Math.abs(ny * canvasH - pos.y) < 20) return o;
+      if (Math.abs(hitPx.x - pos.x) < 80 && Math.abs(hitPx.y - pos.y) < 20) return o;
+    }
+  }
+  // 背景側のもの（エリア）を次に判定
+  for (let i = objects.length - 1; i >= 0; i--) {
+    const o = objects[i];
+    if (o.type === 'area') {
+      const p1 = fromNorm(o.x1, o.y1);
+      const p2 = fromNorm(o.x2, o.y2);
+      const minX = Math.min(p1.x, p2.x);
+      const maxX = Math.max(p1.x, p2.x);
+      const minY = Math.min(p1.y, p2.y);
+      const maxY = Math.max(p1.y, p2.y);
+      if (hitPx.x >= minX && hitPx.x <= maxX && hitPx.y >= minY && hitPx.y <= maxY) {
+        return o;
+      }
     }
   }
   return null;
@@ -238,20 +270,36 @@ function hitTestAny(nx, ny) {
 // =============================================
 function redraw() {
   drawCtx.clearRect(0, 0, canvasW, canvasH);
-  objects.forEach(o => drawObject(drawCtx, o));
+
+  // 1層目: 背景・線 (area, stroke, arrow)
+  objects.forEach(o => {
+    if (o.type === 'area' || o.type === 'stroke' || o.type === 'arrow') {
+      drawObject(drawCtx, o);
+    }
+  });
+
+  if (tempArea) drawAreaObj(drawCtx, tempArea);
   if (tempArrow) drawArrowObj(drawCtx, tempArrow, true);
-  // Draw current live stroke
   if (isPointerDown && currentTool === 'pen' && currentPoints.length > 1) {
     drawLiveStroke(drawCtx, currentPoints, currentColor, currentSize);
   }
+
+  // 2層目: 前景 (player, ball, text)
+  objects.forEach(o => {
+    if (o.type === 'player' || o.type === 'ball' || o.type === 'text') {
+      drawObject(drawCtx, o);
+    }
+  });
 }
 
 function drawObject(ctx, obj) {
   switch (obj.type) {
+    case 'area': drawAreaObj(ctx, obj); break;
     case 'stroke': drawStrokeObj(ctx, obj); break;
     case 'arrow': drawArrowObj(ctx, obj, false); break;
     case 'player': drawPlayerObj(ctx, obj); break;
     case 'text': drawTextObj(ctx, obj); break;
+    case 'ball': drawBallObj(ctx, obj); break;
   }
 }
 
@@ -318,9 +366,49 @@ function drawArrowObj(ctx, obj, preview) {
   ctx.restore();
 }
 
+function drawAreaObj(ctx, obj) {
+  const p1 = fromNorm(obj.x1, obj.y1);
+  const p2 = fromNorm(obj.x2, obj.y2);
+  const x = Math.min(p1.x, p2.x);
+  const y = Math.min(p1.y, p2.y);
+  const w = Math.abs(p2.x - p1.x);
+  const h = Math.abs(p2.y - p1.y);
+
+  ctx.save();
+  ctx.globalAlpha = 0.35; // 半透明
+  ctx.fillStyle = obj.color;
+  ctx.fillRect(x, y, w, h);
+
+  ctx.globalAlpha = 0.8;
+  ctx.strokeStyle = obj.color;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+
+  if (obj.id === selectedId) {
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
 function drawPlayerObj(ctx, obj) {
   const pos = fromNorm(obj.x, obj.y);
-  const r = playerRadius();
+  let r = playerRadius();
+
+  // ポップアニメーション
+  const anim = popAnimMap[obj.id];
+  if (anim) {
+    const t = Math.min(1, (performance.now() - anim.start) / anim.duration);
+    // easeOutBack
+    const c1 = 1.70158, c3 = c1 + 1;
+    const scale = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    r *= Math.max(0.01, scale);
+  }
+
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,0.5)';
   ctx.shadowBlur = 8;
@@ -373,6 +461,56 @@ function drawTextObj(ctx, obj) {
   ctx.restore();
 }
 
+function drawBallObj(ctx, obj) {
+  const pos = fromNorm(obj.x, obj.y);
+  let r = playerRadius() * 0.7; // size of ball
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 3;
+
+  // Draw Mikasa style ball
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffdf00'; // yellow base
+  ctx.fill();
+
+  ctx.save();
+  ctx.clip(); // clip to circle
+  ctx.lineWidth = r * 0.45;
+  ctx.strokeStyle = '#0055ff'; // blue stripes
+
+  ctx.beginPath();
+  ctx.arc(pos.x - r, pos.y, r * 1.3, -Math.PI / 3, Math.PI / 3);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(pos.x + r, pos.y, r * 1.3, Math.PI - Math.PI / 3, Math.PI + Math.PI / 3);
+  ctx.stroke();
+  ctx.restore();
+
+  // Border
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Selection ring
+  if (obj.id === selectedId) {
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, r + 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
 // =============================================
 // TOOLBAR SETUP
 // =============================================
@@ -414,25 +552,166 @@ function setupToolbar() {
   // Player add buttons
   document.getElementById('add-own-btn').addEventListener('click', () => startPlacingPlayer('own'));
   document.getElementById('add-opp-btn').addEventListener('click', () => startPlacingPlayer('opp'));
+  document.getElementById('add-ball-btn').addEventListener('click', () => {
+    // 中央の少し上にぽつんとボールを追加
+    const obj = { id: uid(), type: 'ball', x: 0.5, y: 0.5 };
+    addObject(obj, true);
+    currentTool = 'select';
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => {
+      b.classList.toggle('active', b.dataset.tool === 'select');
+    });
+    updateCursor();
+  });
 }
 
 function updateCursor() {
   const dc = drawCanvas;
-  dc.classList.remove('cur-select', 'cur-eraser', 'cur-text', 'cur-player');
+  dc.classList.remove('cur-select', 'cur-eraser', 'cur-text', 'cur-player', 'cur-area');
   if (currentTool === 'select') dc.classList.add('cur-select');
   else if (currentTool === 'eraser') dc.classList.add('cur-eraser');
   else if (currentTool === 'text') dc.classList.add('cur-text');
   else if (currentTool === 'player') dc.classList.add('cur-player');
+  else if (currentTool === 'area') dc.classList.add('cur-area'); // use crosshair in css
+}
+
+// =============================================
+// VOLLEYBALL POSITION LAYOUT
+// =============================================
+// 座標はcourtBounds正規化 (0,0)=コート左上, (1,1)=コート右下
+// 自チーム x: 0.0〜0.5, 相手チーム x: 0.5〜1.0
+function getVolleyPositions(team) {
+  const isOwn = team === 'own';
+  // courtBoundsに依存せずコート相対座標で直接定義
+  // isOwn: rx * 0.5 で左半分 (0〜0.5)
+  // isOpp: 1 - rx * 0.5 でミラー (0.5〜1.0)
+  const toNx = (rx) => isOwn ? rx * 0.5 : 1 - rx * 0.5;
+  const toNy = (ry) => ry;
+
+  return [
+    { number: 4, nx: toNx(0.1), ny: toNy(0.18) }, // フロントレフト
+    { number: 3, nx: toNx(0.5), ny: toNy(0.18) }, // フロントセンター
+    { number: 2, nx: toNx(0.85), ny: toNy(0.18) }, // フロントライト
+    { number: 5, nx: toNx(0.1), ny: toNy(0.82) }, // バックレフト
+    { number: 6, nx: toNx(0.5), ny: toNy(0.82) }, // バックセンター(リベロ)
+    { number: 1, nx: toNx(0.85), ny: toNy(0.82) }, // バックライト
+  ];
+}
+
+// 近くに選手がいないか確認し、かぶる場合はずらす
+function findFreePosition(baseNx, baseNy, team) {
+  const r = playerRadius();
+  const cw = courtBounds.w || canvasW;
+  const ch = courtBounds.h || canvasH;
+  const minDistPx = r * 2.2; // 最低この距離は離す
+  const minDistNx = minDistPx / cw;
+  const minDistNy = minDistPx / ch;
+
+  const maxTries = 8;
+  const offsets = [
+    [0, 0],
+    [minDistNx, 0], [-minDistNx, 0],
+    [0, minDistNy], [0, -minDistNy],
+    [minDistNx, minDistNy], [-minDistNx, minDistNy],
+    [minDistNx, -minDistNy],
+  ];
+
+  for (let t = 0; t < maxTries; t++) {
+    const [dx, dy] = offsets[t];
+    const cx = baseNx + dx, cy = baseNy + dy;
+    const isColliding = objects.some(o => {
+      if (o.type !== 'player') return false;
+      const distX = (o.x - cx) * cw;
+      const distY = (o.y - cy) * ch;
+      return Math.sqrt(distX * distX + distY * distY) < minDistPx * 0.9;
+    });
+    if (!isColliding) return { nx: cx, ny: cy };
+  }
+  // それでも衝突する場合は少しランダムオフセット
+  return {
+    nx: baseNx + (Math.random() - 0.5) * minDistNx * 2,
+    ny: baseNy + (Math.random() - 0.5) * minDistNy * 2,
+  };
 }
 
 function startPlacingPlayer(team) {
-  const nums = objects.filter(o => o.type === 'player' && o.team === team).map(o => o.number);
-  let n = 1;
-  while (nums.includes(n)) n++;
-  placingPlayer = { team, number: n };
-  drawCanvas.classList.add('cur-player');
-  // Switch to select so clicks place then go back
-  currentTool = 'player_place';
+  // 既存の選手番号を確認
+  const existingNums = objects
+    .filter(o => o.type === 'player' && o.team === team)
+    .map(o => o.number);
+
+  // まだ配置されていないポジションを取得
+  const positions = getVolleyPositions(team);
+  const missing = positions.filter(p => !existingNums.includes(p.number));
+
+  if (missing.length === 0) {
+    // すでに6人全員いる場合は何もしない (またはトースト表示)
+    showAutoPlaceToast(team, 0);
+    return;
+  }
+
+  // アニメーション: 1人ずつ間隔を置いてポンポンと追加
+  const delay = 120; // ms per player
+  missing.forEach((pos, idx) => {
+    setTimeout(() => {
+      const free = findFreePosition(pos.nx, pos.ny, team);
+      const obj = {
+        id: uid(), type: 'player',
+        x: free.nx, y: free.ny,
+        number: pos.number,
+        team,
+        popAnim: true,  // アニメーションフラグ
+      };
+      addObject(obj, true);
+      // ポップアニメーション
+      animatePlayerPop(obj.id);
+    }, idx * delay);
+  });
+
+  showAutoPlaceToast(team, missing.length);
+}
+
+// ポップアニメーション
+let popAnimMap = {}; // id -> startTime
+function animatePlayerPop(id) {
+  popAnimMap[id] = { start: performance.now(), duration: 350 };
+  requestPopRedraw();
+}
+
+let popRedrawScheduled = false;
+function requestPopRedraw() {
+  if (popRedrawScheduled) return;
+  popRedrawScheduled = true;
+  requestAnimationFrame(function loop() {
+    const now = performance.now();
+    let still = false;
+    for (const id in popAnimMap) {
+      const a = popAnimMap[id];
+      if (now - a.start < a.duration) still = true;
+      else delete popAnimMap[id];
+    }
+    redraw();
+    if (still) requestAnimationFrame(loop);
+    else popRedrawScheduled = false;
+  });
+}
+
+function showAutoPlaceToast(team, count) {
+  const label = team === 'own' ? '自チーム' : '相手チーム';
+  const msg = count > 0
+    ? `${label}: ${count}人を自動配置しました`
+    : `${label}: すでに全員配置済みです`;
+  // 簡易トースト
+  let el = document.getElementById('auto-place-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'auto-place-toast';
+    el.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(30,60,100,0.95);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:9999;pointer-events:none;transition:opacity 0.3s;border:1px solid rgba(100,180,255,0.4);';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2000);
 }
 
 // =============================================
@@ -496,6 +775,12 @@ function onPointerDown(e) {
     return;
   }
 
+  if (currentTool === 'area') {
+    isPointerDown = true;
+    areaStart = n;
+    return;
+  }
+
   if (currentTool === 'text') {
     showTextInput(raw.x, raw.y, n.x, n.y);
     return;
@@ -516,8 +801,18 @@ function onPointerMove(e) {
     if (obj) {
       const dx = n.x - dragStartNorm.x;
       const dy = n.y - dragStartNorm.y;
-      obj.x = dragObjOrigPos.x + dx;
-      obj.y = dragObjOrigPos.y + dy;
+      if (obj.type === 'area') {
+        // For area, move both corners
+        const wNorm = obj.x2 - obj.x1;
+        const hNorm = obj.y2 - obj.y1;
+        obj.x1 = dragObjOrigPos.x1 + dx;
+        obj.y1 = dragObjOrigPos.y1 + dy;
+        obj.x2 = obj.x1 + wNorm;
+        obj.y2 = obj.y1 + hNorm;
+      } else {
+        obj.x = dragObjOrigPos.x + dx;
+        obj.y = dragObjOrigPos.y + dy;
+      }
       redraw();
     }
     return;
@@ -539,6 +834,14 @@ function onPointerMove(e) {
     redraw();
     return;
   }
+
+  if (currentTool === 'area' && isPointerDown) {
+    if (areaStart) {
+      tempArea = { type: 'area', x1: areaStart.x, y1: areaStart.y, x2: n.x, y2: n.y, color: currentColor };
+      redraw();
+    }
+    return;
+  }
 }
 
 function onPointerUp(e) {
@@ -549,10 +852,17 @@ function onPointerUp(e) {
   if (currentTool === 'select' && isDragging && selectedId) {
     const obj = objects.find(o => o.id === selectedId);
     if (obj) {
-      const prev = { ...dragObjOrigPos };
-      pushUndo({ action: 'move', id: obj.id, prevX: prev.x, prevY: prev.y, newX: obj.x, newY: obj.y });
-      redoStack = [];
-      publishOp({ type: 'move', id: obj.id, x: obj.x, y: obj.y });
+      if (obj.type === 'area') {
+        const prev = { ...dragObjOrigPos };
+        pushUndo({ action: 'moveArea', id: obj.id, prevX1: prev.x1, prevY1: prev.y1, prevX2: prev.x2, prevY2: prev.y2, newX1: obj.x1, newY1: obj.y1, newX2: obj.x2, newY2: obj.y2 });
+        redoStack = [];
+        publishOp({ type: 'moveArea', id: obj.id, x1: obj.x1, y1: obj.y1, x2: obj.x2, y2: obj.y2 });
+      } else {
+        const prev = { ...dragObjOrigPos };
+        pushUndo({ action: 'move', id: obj.id, prevX: prev.x, prevY: prev.y, newX: obj.x, newY: obj.y });
+        redoStack = [];
+        publishOp({ type: 'move', id: obj.id, x: obj.x, y: obj.y });
+      }
     }
     isDragging = false;
     isPointerDown = false;
@@ -573,12 +883,25 @@ function onPointerUp(e) {
 
   if (currentTool === 'arrow' && isPointerDown) {
     isPointerDown = false;
-    if (arrowStart) {
+    if (arrowStart && (arrowStart.x !== n.x || arrowStart.y !== n.y)) {
       const obj = { id: uid(), type: 'arrow', x1: arrowStart.x, y1: arrowStart.y, x2: n.x, y2: n.y, color: currentColor, width: currentSize };
       addObject(obj, true);
     }
     arrowStart = null;
     tempArrow = null;
+    redraw();
+    return;
+  }
+
+  if (currentTool === 'area' && isPointerDown) {
+    isPointerDown = false;
+    // ensure area has some size
+    if (areaStart && Math.abs(areaStart.x - n.x) > 0.01 && Math.abs(areaStart.y - n.y) > 0.01) {
+      const obj = { id: uid(), type: 'area', x1: areaStart.x, y1: areaStart.y, x2: n.x, y2: n.y, color: currentColor };
+      addObject(obj, true);
+    }
+    areaStart = null;
+    tempArea = null;
     redraw();
     return;
   }
@@ -601,7 +924,7 @@ function eraseAt(px, py) {
   let removed = null;
   for (let i = objects.length - 1; i >= 0; i--) {
     const o = objects[i];
-    if (o.type === 'player' || o.type === 'text') {
+    if (o.type === 'player' || o.type === 'text' || o.type === 'ball') {
       const pos = fromNorm(o.x, o.y);
       const dx = px - pos.x, dy = py - pos.y;
       if (dx * dx + dy * dy < r2) { removed = objects.splice(i, 1)[0]; break; }
@@ -627,6 +950,24 @@ function eraseAt(px, py) {
         publishOp({ type: 'remove', id: removed2.id });
         break;
       }
+    }
+  }
+  // For areas: erase if clicked inside
+  for (let i = objects.length - 1; i >= 0; i--) {
+    const o = objects[i];
+    if (o.type !== 'area') continue;
+    const p1 = fromNorm(o.x1, o.y1);
+    const p2 = fromNorm(o.x2, o.y2);
+    const minX = Math.min(p1.x, p2.x);
+    const maxX = Math.max(p1.x, p2.x);
+    const minY = Math.min(p1.y, p2.y);
+    const maxY = Math.max(p1.y, p2.y);
+    if (px >= minX && px <= maxX && py >= minY && py <= maxY) {
+      const removed3 = objects.splice(i, 1)[0];
+      pushUndo({ action: 'remove', obj: JSON.parse(JSON.stringify(removed3)) });
+      redoStack = [];
+      publishOp({ type: 'remove', id: removed3.id });
+      break;
     }
   }
   redraw();
@@ -720,6 +1061,10 @@ function doUndo() {
     const obj = objects.find(o => o.id === entry.id);
     if (obj) { obj.x = entry.prevX; obj.y = entry.prevY; }
     publishOp({ type: 'move', id: entry.id, x: entry.prevX, y: entry.prevY });
+  } else if (entry.action === 'moveArea') {
+    const obj = objects.find(o => o.id === entry.id);
+    if (obj) { obj.x1 = entry.prevX1; obj.y1 = entry.prevY1; obj.x2 = entry.prevX2; obj.y2 = entry.prevY2; }
+    publishOp({ type: 'moveArea', id: entry.id, x1: entry.prevX1, y1: entry.prevY1, x2: entry.prevX2, y2: entry.prevY2 });
   } else if (entry.action === 'clear') {
     objects.push(...entry.objects);
     // Don't sync clear-undo to avoid complexity
@@ -746,6 +1091,10 @@ function doRedo() {
     const obj = objects.find(o => o.id === entry.id);
     if (obj) { obj.x = entry.newX; obj.y = entry.newY; }
     publishOp({ type: 'move', id: entry.id, x: entry.newX, y: entry.newY });
+  } else if (entry.action === 'moveArea') {
+    const obj = objects.find(o => o.id === entry.id);
+    if (obj) { obj.x1 = entry.newX1; obj.y1 = entry.newY1; obj.x2 = entry.newX2; obj.y2 = entry.newY2; }
+    publishOp({ type: 'moveArea', id: entry.id, x1: entry.newX1, y1: entry.newY1, x2: entry.newX2, y2: entry.newY2 });
   }
   redraw();
 }
@@ -919,6 +1268,11 @@ function applyRemoteOp(op) {
     case 'move': {
       const obj = objects.find(o => o.id === op.id);
       if (obj) { obj.x = op.x; obj.y = op.y; }
+      break;
+    }
+    case 'moveArea': {
+      const obj = objects.find(o => o.id === op.id);
+      if (obj) { obj.x1 = op.x1; obj.y1 = op.y1; obj.x2 = op.x2; obj.y2 = op.y2; }
       break;
     }
     case 'remove': {
