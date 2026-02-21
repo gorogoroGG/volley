@@ -1,14 +1,14 @@
-// =============================================
-// CONFIGURATION - Ably APIキーをここに設定してください
-// https://ably.com で無料アカウント作成後、APIキーを取得
+﻿// =============================================
+// CONFIGURATION - Ably API繧ｭ繝ｼ繧偵％縺薙↓險ｭ螳壹＠縺ｦ縺上□縺輔＞
+// https://ably.com 縺ｧ辟｡譁吶い繧ｫ繧ｦ繝ｳ繝井ｽ懈・蠕後、PI繧ｭ繝ｼ繧貞叙蠕・
 // =============================================
 const ABLY_API_KEY = 'jLJE4g.VLr98w:v36wFu40ADOPh78A1OIL6XR0vAs7bdpOiusN5MeyscE';
 
 // =============================================
 // STATE
 // =============================================
-let objects = [];       // 全描画オブジェクト（正規化座標 0-1）
-let undoStack = [];     // 各エントリ: { action, data } undoに使う逆操作
+let objects = [];       // 蜈ｨ謠冗判繧ｪ繝悶ず繧ｧ繧ｯ繝茨ｼ域ｭ｣隕丞喧蠎ｧ讓・0-1・・
+let undoStack = [];     // 蜷・お繝ｳ繝医Μ: { action, data } undo縺ｫ菴ｿ縺・・桃菴・
 let redoStack = [];
 
 let currentTool = 'pen';
@@ -178,32 +178,32 @@ function drawCourt() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('自チーム', cX + cW * 0.25, cY + cH / 2);
-  ctx.fillText('相手チーム', cX + cW * 0.75, cY + cH / 2);
+  ctx.fillText('閾ｪ繝√・繝', cX + cW * 0.25, cY + cH / 2);
+  ctx.fillText('逶ｸ謇九メ繝ｼ繝', cX + cW * 0.75, cY + cH / 2);
 
   const fs2 = Math.max(8, cW / 60);
   ctx.font = `${fs2}px 'Segoe UI',sans-serif`;
   ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ['自', '相'].forEach((_, i) => {
+  ['閾ｪ', '逶ｸ'].forEach((_, i) => {
     const bx = cX + cW * (i === 0 ? 0.25 : 0.75);
-    ctx.fillText('フロント', bx, cY + cH * 0.13);
-    ctx.fillText('バック', bx, cY + cH * 0.87);
+    ctx.fillText('繝輔Ο繝ｳ繝・, bx, cY + cH * 0.13);
+    ctx.fillText('繝舌ャ繧ｯ', bx, cY + cH * 0.87);
   });
 }
 
 // =============================================
 // COORDINATE UTILS
 // =============================================
-// 座標はコート領域 (courtBounds) を基準に正規化する。
-// これにより画面比率が異なるデバイス間でも同じコート上の位置が同じ値になる。
+// 蠎ｧ讓吶・繧ｳ繝ｼ繝磯伜沺 (courtBounds) 繧貞渕貅悶↓豁｣隕丞喧縺吶ｋ縲・
+// 縺薙ｌ縺ｫ繧医ｊ逕ｻ髱｢豈皮紫縺檎焚縺ｪ繧九ョ繝舌う繧ｹ髢薙〒繧ょ酔縺倥さ繝ｼ繝井ｸ翫・菴咲ｽｮ縺悟酔縺伜､縺ｫ縺ｪ繧九・
 function toNorm(px, py) {
   const { x: cx, y: cy, w: cw, h: ch } = courtBounds;
-  if (!cw || !ch) return { x: px / canvasW, y: py / canvasH }; // フォールバック
+  if (!cw || !ch) return { x: px / canvasW, y: py / canvasH }; // 繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ
   return { x: (px - cx) / cw, y: (py - cy) / ch };
 }
 function fromNorm(nx, ny) {
   const { x: cx, y: cy, w: cw, h: ch } = courtBounds;
-  if (!cw || !ch) return { x: nx * canvasW, y: ny * canvasH }; // フォールバック
+  if (!cw || !ch) return { x: nx * canvasW, y: ny * canvasH }; // 繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ
   return { x: cx + nx * cw, y: cy + ny * ch };
 }
 
@@ -238,7 +238,7 @@ function hitTestPlayer(nx, ny) {
 function hitTestAny(nx, ny) {
   const r = playerRadius();
   const hitPx = fromNorm(nx, ny);
-  // 上に描画されるもの（テキスト・選手・ボール）を先に判定
+  // 荳翫↓謠冗判縺輔ｌ繧九ｂ縺ｮ・医ユ繧ｭ繧ｹ繝医・驕ｸ謇九・繝懊・繝ｫ・峨ｒ蜈医↓蛻､螳・
   for (let i = objects.length - 1; i >= 0; i--) {
     const o = objects[i];
     if (o.type === 'player' || o.type === 'ball') {
@@ -252,7 +252,7 @@ function hitTestAny(nx, ny) {
       if (Math.abs(hitPx.x - pos.x) < 80 && Math.abs(hitPx.y - pos.y) < 20) return o;
     }
   }
-  // 背景側のもの（エリア）を次に判定
+  // 閭梧勹蛛ｴ縺ｮ繧ゅ・・医お繝ｪ繧｢・峨ｒ谺｡縺ｫ蛻､螳・
   for (let i = objects.length - 1; i >= 0; i--) {
     const o = objects[i];
     if (o.type === 'area') {
@@ -276,7 +276,7 @@ function hitTestAny(nx, ny) {
 function redraw() {
   drawCtx.clearRect(0, 0, canvasW, canvasH);
 
-  // 1層目: 背景・線 (area, stroke, arrow)
+  // 1螻､逶ｮ: 閭梧勹繝ｻ邱・(area, stroke, arrow)
   objects.forEach(o => {
     if (o.type === 'area' || o.type === 'stroke' || o.type === 'arrow') {
       drawObject(drawCtx, o);
@@ -289,7 +289,7 @@ function redraw() {
     drawLiveStroke(drawCtx, currentPoints, currentColor, currentSize);
   }
 
-  // 2層目: 前景 (player, ball, text)
+  // 2螻､逶ｮ: 蜑肴勹 (player, ball, text)
   objects.forEach(o => {
     if (o.type === 'player' || o.type === 'ball' || o.type === 'text') {
       drawObject(drawCtx, o);
@@ -380,7 +380,7 @@ function drawAreaObj(ctx, obj) {
   const h = Math.abs(p2.y - p1.y);
 
   ctx.save();
-  ctx.globalAlpha = 0.35; // 半透明
+  ctx.globalAlpha = 0.35; // 蜊企乗・
   ctx.fillStyle = obj.color;
   ctx.fillRect(x, y, w, h);
 
@@ -404,7 +404,7 @@ function drawPlayerObj(ctx, obj) {
   const pos = fromNorm(obj.x, obj.y);
   let r = playerRadius();
 
-  // ポップアニメーション
+  // 繝昴ャ繝励い繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ
   const anim = popAnimMap[obj.id];
   if (anim) {
     const t = Math.min(1, (performance.now() - anim.start) / anim.duration);
@@ -566,7 +566,7 @@ function setupToolbar() {
   document.getElementById('add-own-btn').addEventListener('click', () => startPlacingPlayer('own'));
   document.getElementById('add-opp-btn').addEventListener('click', () => startPlacingPlayer('opp'));
   document.getElementById('add-ball-btn').addEventListener('click', () => {
-    // 中央の少し上にぽつんとボールを追加
+    // 荳ｭ螟ｮ縺ｮ蟆代＠荳翫↓縺ｽ縺､繧薙→繝懊・繝ｫ繧定ｿｽ蜉
     const obj = { id: uid(), type: 'ball', x: 0.5, y: 0.5 };
     addObject(obj, true);
     currentTool = 'select';
@@ -579,14 +579,14 @@ function setupToolbar() {
   // Display toggles
   document.getElementById('toggle-pos-btn').addEventListener('click', (e) => {
     showPositions = !showPositions;
-    e.target.textContent = showPositions ? '🏷️ Pos: オン' : '🏷️ Pos: オフ';
+    e.target.textContent = showPositions ? '捷・・Pos: 繧ｪ繝ｳ' : '捷・・Pos: 繧ｪ繝・;
     e.target.classList.toggle('active', showPositions);
     redraw();
   });
 
   document.getElementById('toggle-camera-btn').addEventListener('click', (e) => {
     cameraView = cameraView === 'top' ? 'tv' : 'top';
-    e.target.textContent = cameraView === 'top' ? '🎥 ま上' : '🎥 TV視点';
+    e.target.textContent = cameraView === 'top' ? '磁 縺ｾ荳・ : '磁 TV隕也せ';
     e.target.classList.toggle('active', cameraView === 'tv');
     document.getElementById('canvas-container').classList.toggle('perspective-tv', cameraView === 'tv');
   });
@@ -605,32 +605,32 @@ function updateCursor() {
 // =============================================
 // VOLLEYBALL POSITION LAYOUT
 // =============================================
-// 座標はcourtBounds正規化 (0,0)=コート左上, (1,1)=コート右下
-// 自チーム x: 0.0〜0.5, 相手チーム x: 0.5〜1.0
+// 蠎ｧ讓吶・courtBounds豁｣隕丞喧 (0,0)=繧ｳ繝ｼ繝亥ｷｦ荳・ (1,1)=繧ｳ繝ｼ繝亥承荳・
+// 閾ｪ繝√・繝 x: 0.0縲・.5, 逶ｸ謇九メ繝ｼ繝 x: 0.5縲・.0
 function getVolleyPositions(team) {
   const isOwn = team === 'own';
-  // courtBoundsに依存せずコート相対座標で直接定義
-  // isOwn: rx * 0.5 で左半分 (0〜0.5)
-  // isOpp: 1 - rx * 0.5 でミラー (0.5〜1.0)
+  // courtBounds縺ｫ萓晏ｭ倥○縺壹さ繝ｼ繝育嶌蟇ｾ蠎ｧ讓吶〒逶ｴ謗･螳夂ｾｩ
+  // isOwn: rx * 0.5 縺ｧ蟾ｦ蜊雁・ (0縲・.5)
+  // isOpp: 1 - rx * 0.5 縺ｧ繝溘Λ繝ｼ (0.5縲・.0)
   const toNx = (rx) => isOwn ? rx * 0.5 : 1 - rx * 0.5;
   const toNy = (ry) => ry;
 
   return [
-    { number: 4, position: 'OH', nx: toNx(0.1), ny: toNy(0.18) }, // フロントレフト
-    { number: 3, position: 'MB', nx: toNx(0.5), ny: toNy(0.18) }, // フロントセンター
-    { number: 2, position: 'OP', nx: toNx(0.85), ny: toNy(0.18) }, // フロントライト
-    { number: 5, position: 'OH', nx: toNx(0.1), ny: toNy(0.82) }, // バックレフト
-    { number: 6, position: 'L', nx: toNx(0.5), ny: toNy(0.82) }, // バックセンター(リベロ)
-    { number: 1, position: 'S', nx: toNx(0.85), ny: toNy(0.82) }, // バックライト
+    { number: 4, position: 'OH', nx: toNx(0.1), ny: toNy(0.18) }, // 繝輔Ο繝ｳ繝医Ξ繝輔ヨ
+    { number: 3, position: 'MB', nx: toNx(0.5), ny: toNy(0.18) }, // 繝輔Ο繝ｳ繝医そ繝ｳ繧ｿ繝ｼ
+    { number: 2, position: 'OP', nx: toNx(0.85), ny: toNy(0.18) }, // 繝輔Ο繝ｳ繝医Λ繧､繝・
+    { number: 5, position: 'OH', nx: toNx(0.1), ny: toNy(0.82) }, // 繝舌ャ繧ｯ繝ｬ繝輔ヨ
+    { number: 6, position: 'L', nx: toNx(0.5), ny: toNy(0.82) }, // 繝舌ャ繧ｯ繧ｻ繝ｳ繧ｿ繝ｼ(繝ｪ繝吶Ο)
+    { number: 1, position: 'S', nx: toNx(0.85), ny: toNy(0.82) }, // 繝舌ャ繧ｯ繝ｩ繧､繝・
   ];
 }
 
-// 近くに選手がいないか確認し、かぶる場合はずらす
+// 霑代￥縺ｫ驕ｸ謇九′縺・↑縺・°遒ｺ隱阪＠縲√°縺ｶ繧句ｴ蜷医・縺壹ｉ縺・
 function findFreePosition(baseNx, baseNy, team) {
   const r = playerRadius();
   const cw = courtBounds.w || canvasW;
   const ch = courtBounds.h || canvasH;
-  const minDistPx = r * 2.2; // 最低この距離は離す
+  const minDistPx = r * 2.2; // 譛菴弱％縺ｮ霍晞屬縺ｯ髮｢縺・
   const minDistNx = minDistPx / cw;
   const minDistNy = minDistPx / ch;
 
@@ -654,7 +654,7 @@ function findFreePosition(baseNx, baseNy, team) {
     });
     if (!isColliding) return { nx: cx, ny: cy };
   }
-  // それでも衝突する場合は少しランダムオフセット
+  // 縺昴ｌ縺ｧ繧り｡晉ｪ√☆繧句ｴ蜷医・蟆代＠繝ｩ繝ｳ繝繝繧ｪ繝輔そ繝・ヨ
   return {
     nx: baseNx + (Math.random() - 0.5) * minDistNx * 2,
     ny: baseNy + (Math.random() - 0.5) * minDistNy * 2,
@@ -662,22 +662,22 @@ function findFreePosition(baseNx, baseNy, team) {
 }
 
 function startPlacingPlayer(team) {
-  // 既存の選手番号を確認
+  // 譌｢蟄倥・驕ｸ謇狗分蜿ｷ繧堤｢ｺ隱・
   const existingNums = objects
     .filter(o => o.type === 'player' && o.team === team)
     .map(o => o.number);
 
-  // まだ配置されていないポジションを取得
+  // 縺ｾ縺驟咲ｽｮ縺輔ｌ縺ｦ縺・↑縺・・繧ｸ繧ｷ繝ｧ繝ｳ繧貞叙蠕・
   const positions = getVolleyPositions(team);
   const missing = positions.filter(p => !existingNums.includes(p.number));
 
   if (missing.length === 0) {
-    // すでに6人全員いる場合は何もしない (またはトースト表示)
+    // 縺吶〒縺ｫ6莠ｺ蜈ｨ蜩｡縺・ｋ蝣ｴ蜷医・菴輔ｂ縺励↑縺・(縺ｾ縺溘・繝医・繧ｹ繝郁｡ｨ遉ｺ)
     showAutoPlaceToast(team, 0);
     return;
   }
 
-  // アニメーション: 1人ずつ間隔を置いてポンポンと追加
+  // 繧｢繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ: 1莠ｺ縺壹▽髢馴囈繧堤ｽｮ縺・※繝昴Φ繝昴Φ縺ｨ霑ｽ蜉
   const delay = 120; // ms per player
   missing.forEach((pos, idx) => {
     setTimeout(() => {
@@ -688,10 +688,10 @@ function startPlacingPlayer(team) {
         number: pos.number,
         position: pos.position,
         team,
-        popAnim: true,  // アニメーションフラグ
+        popAnim: true,  // 繧｢繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ繝輔Λ繧ｰ
       };
       addObject(obj, true);
-      // ポップアニメーション
+      // 繝昴ャ繝励い繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ
       animatePlayerPop(obj.id);
     }, idx * delay);
   });
@@ -699,7 +699,7 @@ function startPlacingPlayer(team) {
   showAutoPlaceToast(team, missing.length);
 }
 
-// ポップアニメーション
+// 繝昴ャ繝励い繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ
 let popAnimMap = {}; // id -> startTime
 function animatePlayerPop(id) {
   popAnimMap[id] = { start: performance.now(), duration: 350 };
@@ -725,11 +725,11 @@ function requestPopRedraw() {
 }
 
 function showAutoPlaceToast(team, count) {
-  const label = team === 'own' ? '自チーム' : '相手チーム';
+  const label = team === 'own' ? '閾ｪ繝√・繝' : '逶ｸ謇九メ繝ｼ繝';
   const msg = count > 0
-    ? `${label}: ${count}人を自動配置しました`
-    : `${label}: すでに全員配置済みです`;
-  // 簡易トースト
+    ? `${label}: ${count}莠ｺ繧定・蜍暮・鄂ｮ縺励∪縺励◆`
+    : `${label}: 縺吶〒縺ｫ蜈ｨ蜩｡驟咲ｽｮ貂医∩縺ｧ縺兪;
+  // 邁｡譏薙ヨ繝ｼ繧ｹ繝・
   let el = document.getElementById('auto-place-toast');
   if (!el) {
     el = document.createElement('div');
@@ -1007,7 +1007,7 @@ function eraseAt(px, py) {
 // =============================================
 function addObject(obj, broadcast) {
   objects.push(obj);
-  // obj を保存しておき、Redo時に復元できるようにする
+  // obj 繧剃ｿ晏ｭ倥＠縺ｦ縺翫″縲ヽedo譎ゅ↓蠕ｩ蜈・〒縺阪ｋ繧医≧縺ｫ縺吶ｋ
   pushUndo({ action: 'add', id: obj.id, obj: JSON.parse(JSON.stringify(obj)) });
   redoStack = [];
   redraw();
@@ -1130,7 +1130,7 @@ function doRedo() {
 
 function confirmClear() {
   if (!objects.length) return;
-  if (!window.confirm('ボードを全消去しますか？')) return;
+  if (!window.confirm('繝懊・繝峨ｒ蜈ｨ豸亥悉縺励∪縺吶°・・)) return;
   const snap = JSON.parse(JSON.stringify(objects));
   pushUndo({ action: 'clear', objects: snap });
   redoStack = [];
@@ -1194,7 +1194,7 @@ function openQR() {
 function flashCopied(btnId) {
   const btn = document.getElementById(btnId);
   const orig = btn.textContent;
-  btn.textContent = '✅';
+  btn.textContent = '笨・;
   setTimeout(() => { btn.textContent = orig; }, 1500);
 }
 
@@ -1212,25 +1212,25 @@ function initAbly() {
   setStatus('connecting');
 
   if (ABLY_API_KEY === 'YOUR_ABLY_API_KEY_HERE') {
-    console.warn('[VolleyBoard] Ably APIキーが未設定です。app.js の ABLY_API_KEY を設定してください。');
+    console.warn('[VolleyBoard] Ably API繧ｭ繝ｼ縺梧悴險ｭ螳壹〒縺吶Ｂpp.js 縺ｮ ABLY_API_KEY 繧定ｨｭ螳壹＠縺ｦ縺上□縺輔＞縲・);
     setStatus('disconnected');
-    document.getElementById('status-text').textContent = 'オフライン(APIキー未設定)';
+    document.getElementById('status-text').textContent = '繧ｪ繝輔Λ繧､繝ｳ(API繧ｭ繝ｼ譛ｪ險ｭ螳・';
     return;
   }
 
   ably = new Ably.Realtime({ key: ABLY_API_KEY, clientId: myClientId });
   ably.connection.on('connected', () => {
     setStatus('connected');
-    document.getElementById('status-text').textContent = '接続済み';
+    document.getElementById('status-text').textContent = '謗･邯壽ｸ医∩';
     joinChannel();
   });
   ably.connection.on('disconnected', () => {
     setStatus('disconnected');
-    document.getElementById('status-text').textContent = '切断';
+    document.getElementById('status-text').textContent = '蛻・妙';
   });
   ably.connection.on('failed', () => {
     setStatus('disconnected');
-    document.getElementById('status-text').textContent = '接続失敗';
+    document.getElementById('status-text').textContent = '謗･邯壼､ｱ謨・;
   });
 }
 
@@ -1265,7 +1265,7 @@ function joinChannel() {
     channel.presence.get((err, members) => {
       if (!err) {
         connectedCount = members.length;
-        document.getElementById('user-count').textContent = '👥 ' + connectedCount;
+        document.getElementById('user-count').textContent = '則 ' + connectedCount;
       }
     });
   });
@@ -1276,7 +1276,7 @@ function updateUserCount() {
   channel.presence.get((err, members) => {
     if (!err) {
       connectedCount = members.length;
-      document.getElementById('user-count').textContent = '👥 ' + connectedCount;
+      document.getElementById('user-count').textContent = '則 ' + connectedCount;
     }
   });
 }
@@ -1321,3 +1321,4 @@ function setStatus(state) {
   const dot = document.getElementById('status-dot');
   dot.className = 'status-dot ' + state;
 }
+

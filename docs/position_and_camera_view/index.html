@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>署 VolleyBoard - 繝舌Ξ繝ｼ繝懊・繝ｫ謌ｦ陦薙・繝ｼ繝・/title>
+
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d1520">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VolleyBoard">
+  <link rel="apple-touch-icon" href="icon.svg">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header id="header">
+    <div class="header-left">
+      <span class="logo">署 VolleyBoard</span>
+      <div class="room-info">
+        <span class="room-label">ROOM</span>
+        <span id="room-id">------</span>
+        <button id="copy-url-btn" class="icon-btn" title="URL繧偵さ繝斐・">搭</button>
+        <button id="qr-btn" class="icon-btn" title="QR繧ｳ繝ｼ繝・>導</button>
+        <a href="3d.html" class="icon-btn" title="3D謌ｦ陦薙ン繝･繝ｼ"
+          style="text-decoration:none;font-size:0.78rem;font-weight:700;color:#4d94ff;padding:3px 8px;border:1px solid #263547;border-radius:8px;background:#1c2d40">識
+          3D</a>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="status-dot" class="status-dot"></span>
+      <span id="status-text" class="status-text">謗･邯壻ｸｭ...</span>
+      <span id="user-count" class="user-count">則 1</span>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <div id="main">
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+
+      <div class="panel-section">
+        <div class="section-label">繝・・繝ｫ</div>
+        <div class="btn-grid cols3">
+          <button class="tool-btn active" data-tool="pen" title="繝壹Φ">笨擾ｸ・/button>
+          <button class="tool-btn" data-tool="eraser" title="豸医＠繧ｴ繝">ｧｹ</button>
+          <button class="tool-btn" data-tool="area" title="繧ｨ繝ｪ繧｢">洶</button>
+          <button class="tool-btn" data-tool="arrow" title="遏｢蜊ｰ">筐｡・・/button>
+          <button class="tool-btn" data-tool="text" title="繝・く繧ｹ繝・>統</button>
+          <button class="tool-btn" data-tool="select" title="遘ｻ蜍・>鱒・・/button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">謫堺ｽ・/div>
+        <div class="btn-grid cols3">
+          <button id="undo-btn" class="tool-btn" title="蜈・↓謌ｻ縺・Ctrl+Z">竊ｩ・・/button>
+          <button id="redo-btn" class="tool-btn" title="繧・ｊ逶ｴ縺・Ctrl+Y">竊ｪ・・/button>
+          <button id="clear-btn" class="tool-btn danger" title="蜈ｨ豸亥悉">卵・・/button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">濶ｲ</div>
+        <div class="color-grid">
+          <button class="color-btn" data-color="#FFFFFF" style="background:#FFFFFF" title="逋ｽ"></button>
+          <button class="color-btn active" data-color="#FF4444" style="background:#FF4444" title="襍､"></button>
+          <button class="color-btn" data-color="#4488FF" style="background:#4488FF" title="髱・></button>
+          <button class="color-btn" data-color="#44DD88" style="background:#44DD88" title="邱・></button>
+          <button class="color-btn" data-color="#FFEE44" style="background:#FFEE44" title="鮟・></button>
+          <button class="color-btn" data-color="#FF9900" style="background:#FF9900" title="讖・></button>
+          <button class="color-btn" data-color="#CC66FF" style="background:#CC66FF" title="邏ｫ"></button>
+          <button class="color-btn" data-color="#111111" style="background:#111111" title="鮟・></button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">螟ｪ縺・/div>
+        <div class="btn-grid cols3">
+          <button class="size-btn" data-size="2">邏ｰ</button>
+          <button class="size-btn active" data-size="4">荳ｭ</button>
+          <button class="size-btn" data-size="8">螟ｪ</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">驕ｸ謇九・繝懊・繝ｫ</div>
+        <button id="add-own-btn" class="player-add-btn own">・・閾ｪ繝√・繝</button>
+        <button id="add-opp-btn" class="player-add-btn opp">・・逶ｸ謇九メ繝ｼ繝</button>
+        <button id="add-ball-btn" class="player-add-btn" style="background:#f39c12; margin-top:5px; color:#fff;">署
+          繝懊・繝ｫ</button>
+        <div class="section-label" style="margin-top:8px">繝偵Φ繝・蜿ｳ繧ｯ繝ｪ繝・け縺ｧ蜑企勁</div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">陦ｨ遉ｺ險ｭ螳・/div>
+        <div class="btn-grid cols2">
+          <button id="toggle-pos-btn" class="tool-btn" title="繝昴ず繧ｷ繝ｧ繝ｳ陦ｨ遉ｺ">捷・・Pos: 繧ｪ繝・/button>
+          <button id="toggle-camera-btn" class="tool-btn" title="隕也せ蛻・崛">磁 縺ｾ荳・/button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Canvas area -->
+    <div id="canvas-container">
+      <canvas id="court-canvas"></canvas>
+      <canvas id="draw-canvas"></canvas>
+      <!-- Text input overlay -->
+      <div id="text-overlay" style="display:none;position:absolute;z-index:50;">
+        <input id="text-input" type="text" placeholder="繝・く繧ｹ繝医ｒ蜈･蜉・.. Enter遒ｺ螳・>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- QR Modal -->
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>QR繧ｳ繝ｼ繝峨〒諡帛ｾ・/h2>
+      <p>縺薙・繧ｳ繝ｼ繝峨ｒ繧ｹ繧ｭ繝｣繝ｳ縺励※繝ｫ繝ｼ繝縺ｫ蜿ょ刈</p>
+      <div id="qr-code-el"></div>
+      <div class="url-row">
+        <input id="share-url-input" type="text" readonly>
+        <button id="modal-copy-btn">繧ｳ繝斐・</button>
+      </div>
+      <button id="close-qr-btn" class="close-btn">髢峨§繧・/button>
+    </div>
+  </div>
+
+  <!-- Welcome Toast -->
+  <div id="welcome-toast" class="toast hidden">
+    <span class="toast-icon">署</span>
+    <div class="toast-body">
+      <strong>譁ｰ縺励＞繝ｫ繝ｼ繝繧剃ｽ懈・</strong>
+      <span id="toast-room-id"></span>
+    </div>
+    <button id="toast-share-btn" class="toast-share-btn">蜈ｱ譛・導</button>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => console.log('ServiceWorker registered:', registration.scope))
+          .catch(error => console.log('ServiceWorker registration failed:', error));
+      });
+    }
+  </script>
+</body>
+
+</html>
